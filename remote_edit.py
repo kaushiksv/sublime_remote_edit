@@ -86,7 +86,7 @@ def get_ssh_listing(address, path, warn=True):
     return {'error': error_message, 'items': items}
 
 
-def scp(from_path, to_path, create_if_missing=False):
+def scp(scp_exec_path, scp_cert_path, from_path, to_path, create_if_missing=False):
     """
     Call out to the command line scp.
     Note: We don't do any authentication.
@@ -95,7 +95,8 @@ def scp(from_path, to_path, create_if_missing=False):
     IMPORTANT: If you try to write to a file you don't
     have write permissions on you will not get an error!
     """
-    command = 'scp -o StrictHostKeychecking=no "%s" "%s"' % (from_path, to_path)
+    scp_cert_opt = ('-f %s ' % scp_cert_path) if scp_cert_path else ''
+    command = '%s %s-o StrictHostKeychecking=no "%s" "%s"' % (scp_exec_path, scp_cert_opt, from_path, to_path)
     log('Command: \'%s\'' % command)
 
     pipe = subprocess.Popen(
@@ -233,6 +234,9 @@ class RemoteEditOpenRemoteFileCommand(sublime_plugin.WindowCommand):
         if ':' in path:
             real_path, line_no = path.split(':', 1)
 
+        scp_exec_path = ssh_config.get('scp_exec_path', 'scp')
+        scp_cert_path = ssh_config.get('scp_cert_path')
+        
         scp_path = '%s:%s' % (ssh_config.get('address', alias), real_path)
         if 'username' in ssh_config:
             scp_path = '%s@%s' % (ssh_config['username'], scp_path)
@@ -247,13 +251,15 @@ class RemoteEditOpenRemoteFileCommand(sublime_plugin.WindowCommand):
         else:
             temp_path = os.path.join(tempfile.mkdtemp(), os.path.basename(real_path))
 
-            scp(scp_path, temp_path, create_if_missing)
+            scp(scp_exec_path, scp_cert_path, scp_path, temp_path, create_if_missing)
 
             if not os.path.exists(temp_path):
                 return
 
             view = self.window.open_file(temp_path)
             settings = view.settings()
+            settings.set('remote_edit_scp_exec_path', scp_exec_path)
+            settings.set('remote_edit_scp_cert_path', scp_cert_path)
             settings.set('remote_edit_alias', alias)
             settings.set('remote_edit_path', path)
             settings.set('remote_edit_scp_path', scp_path)
@@ -311,6 +317,8 @@ class RemoteEditListener(sublime_plugin.EventListener):
             settings.has('remote_edit_temp_path'):
             log('Saved: "%s"' % settings.get('remote_edit_scp_path'))
             scp(
+                settings.get('remote_edit_scp_exec_path'),
+                settings.get('remote_edit_scp_cert_path'),
                 settings.get('remote_edit_temp_path'),
                 settings.get('remote_edit_scp_path'),
                 settings.get('remote_edit_create_if_missing')
