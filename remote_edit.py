@@ -58,7 +58,6 @@ def get_ssh_listing(ssh_exec_path, cert_path, address, path, warn=True):
     cert_opts = ('-i %s ' % cert_path) if cert_path else ''
     command = '%s %s-o StrictHostKeychecking=no "%s" ls -aF "%s"' % (ssh_exec_path, cert_opts, address, path)
     log('Command: \'%s\'' % command)
-    sublime.message_dialog(command)
     pipe = subprocess.Popen(
         command,
         stdin=subprocess.PIPE,
