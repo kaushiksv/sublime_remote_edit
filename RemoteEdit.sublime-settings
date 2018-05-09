@@ -8,10 +8,20 @@
 			
 			// Username to log into server with
 			// Not required, the command line scp will default it to current user
-	//		"username": "USERNAME_ON_REMOTE_MACHINE"
+	//		"username": "USERNAME_ON_REMOTE_MACHINE",
 
-			// NOTE: Remember, to authenticate you need to have your pub key
-			// registered in the remote server ssh's authorized_keys file.
+			//  Optional; Custom path to ssh/scp binaries.
+	//		"ssh_exec_path" : "Z:\\PortableGit\\mingw64\\bin\\ssh.exe",
+	//		"scp_exec_path" : "Z:\\PortableGit\\mingw64\\bin\\scp.exe",
+
+			//  Optional; Specify private key file to be used
+	//		"cert_path": "Z:\\.ssh\\sublime_id_rsa"
+
+			// NOTE:
+			//  (1) Remember to authenticate you need to have your pub key
+			//      registered in the remote server ssh's authorized_keys file.
+			//  (2) For ssh/scp/cert paths with spaces, tweak your string accordingly.
+			//      Ex: In Windows, enclose in double quotes. In Unix, escape with '\'
 	//	},
 	}
 }

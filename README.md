@@ -45,9 +45,15 @@ Create an alias, an alias points to a configuration for a specific server.
 				"address": "IPADDRESS_OR_SERVERNAME",
 				// Username to log into server with
 				// Not required, the command line scp will default it to current user
-				"username": "USERNAME_ON_REMOTE_MACHINE"
+				"username": "USERNAME_ON_REMOTE_MACHINE",
+
+				"ssh_exec_path": "OPTIONAL_CUSTOM_PATH_TO_SSH",
+				"scp_exec_path": "OPTIONAL_CUSTOM_PATH_TO_SCP",
+				"cert_path": "OPTIONAL_CUSTOM_PATH_TO_PRIVATE_KEY",
 				// NOTE: Remember, to authenticate you need to have your pub key
 				// registered in the remote server ssh's authorized_keys file.,
+				// Tweak the string for paths with spaces.
+
 				"create_if_missing": false
 			},
 		}
@@ -83,6 +89,11 @@ In your current project file, you can also add aliases:
 				{
 					"address": "IPADDRESS_OR_SERVERNAME",
 					"username": "USERNAME_ON_REMOTE_MACHINE",
+
+					"ssh_exec_path": "OPTIONAL_CUSTOM_PATH_TO_SSH",
+					"scp_exec_path": "OPTIONAL_CUSTOM_PATH_TO_SCP",
+					"cert_path": "OPTIONAL_CUSTOM_PATH_TO_PRIVATE_KEY",
+
 					"create_if_missing": false
 				}
 			}
