@@ -54,10 +54,11 @@ def get_settings(window=None, create_if_missing=None):
     return settings
 
 
-def get_ssh_listing(address, path, warn=True):
-    command = 'ssh -o StrictHostKeychecking=no "%s" ls -aF "%s"' % (address, path)
+def get_ssh_listing(ssh_exec_path, cert_path, address, path, warn=True):
+    cert_opts = ('-i %s ' % cert_path) if cert_path else ''
+    command = '%s %s-o StrictHostKeychecking=no "%s" ls -aF "%s"' % (ssh_exec_path, cert_opts, address, path)
     log('Command: \'%s\'' % command)
-
+    sublime.message_dialog(command)
     pipe = subprocess.Popen(
         command,
         stdin=subprocess.PIPE,
@@ -86,7 +87,7 @@ def get_ssh_listing(address, path, warn=True):
     return {'error': error_message, 'items': items}
 
 
-def scp(scp_exec_path, scp_cert_path, from_path, to_path, create_if_missing=False):
+def scp(scp_exec_path, cert_path, from_path, to_path, create_if_missing=False):
     """
     Call out to the command line scp.
     Note: We don't do any authentication.
@@ -95,8 +96,8 @@ def scp(scp_exec_path, scp_cert_path, from_path, to_path, create_if_missing=Fals
     IMPORTANT: If you try to write to a file you don't
     have write permissions on you will not get an error!
     """
-    scp_cert_opt = ('-f %s ' % scp_cert_path) if scp_cert_path else ''
-    command = '%s %s-o StrictHostKeychecking=no "%s" "%s"' % (scp_exec_path, scp_cert_opt, from_path, to_path)
+    cert_opts = ('-i %s ' % cert_path) if cert_path else ''
+    command = '%s %s-o StrictHostKeychecking=no "%s" "%s"' % (scp_exec_path, cert_opts, from_path, to_path)
     log('Command: \'%s\'' % command)
 
     pipe = subprocess.Popen(
@@ -190,7 +191,7 @@ class RemoteEditOpenRemoteFilePromptCommand(sublime_plugin.WindowCommand):
         if self.path.endswith('@'):
             self.path = self.path[:-1] + '/'
             link = True
-        result = get_ssh_listing(address, self.path, not link)
+        result = get_ssh_listing(self.ssh_config.get('ssh_exec_path', 'ssh'), self.ssh_config.get('cert_path'), address, self.path, not link)
         if link and result['error'] is not None:
             log('Link Failback, "%s" is not a directory. Trying file.' % self.path)
             self.window.run_command(
@@ -235,7 +236,7 @@ class RemoteEditOpenRemoteFileCommand(sublime_plugin.WindowCommand):
             real_path, line_no = path.split(':', 1)
 
         scp_exec_path = ssh_config.get('scp_exec_path', 'scp')
-        scp_cert_path = ssh_config.get('scp_cert_path')
+        cert_path = ssh_config.get('cert_path')
         
         scp_path = '%s:%s' % (ssh_config.get('address', alias), real_path)
         if 'username' in ssh_config:
@@ -251,7 +252,7 @@ class RemoteEditOpenRemoteFileCommand(sublime_plugin.WindowCommand):
         else:
             temp_path = os.path.join(tempfile.mkdtemp(), os.path.basename(real_path))
 
-            scp(scp_exec_path, scp_cert_path, scp_path, temp_path, create_if_missing)
+            scp(scp_exec_path, cert_path, scp_path, temp_path, create_if_missing)
 
             if not os.path.exists(temp_path):
                 return
@@ -259,7 +260,7 @@ class RemoteEditOpenRemoteFileCommand(sublime_plugin.WindowCommand):
             view = self.window.open_file(temp_path)
             settings = view.settings()
             settings.set('remote_edit_scp_exec_path', scp_exec_path)
-            settings.set('remote_edit_scp_cert_path', scp_cert_path)
+            settings.set('remote_edit_cert_path', cert_path)
             settings.set('remote_edit_alias', alias)
             settings.set('remote_edit_path', path)
             settings.set('remote_edit_scp_path', scp_path)
@@ -318,7 +319,7 @@ class RemoteEditListener(sublime_plugin.EventListener):
             log('Saved: "%s"' % settings.get('remote_edit_scp_path'))
             scp(
                 settings.get('remote_edit_scp_exec_path'),
-                settings.get('remote_edit_scp_cert_path'),
+                settings.get('remote_edit_cert_path'),
                 settings.get('remote_edit_temp_path'),
                 settings.get('remote_edit_scp_path'),
                 settings.get('remote_edit_create_if_missing')
